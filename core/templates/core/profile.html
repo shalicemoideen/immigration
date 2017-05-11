@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+
+ {% block main %}
+ <div class="container">
+  <div class="col-md-12">
+    <a href="/home" class="pull-right"><button type="button" class="btn btn-primary">Home</button></a>
+  </div>
+
+ <div class="container immigration-doc">
+
+ <ul class="nav nav-tabs">
+  <li class="active"><a data-toggle="tab" href="#myprofile" class="doc-pending"><i class="fa fa-user-circle-o" aria-hidden="true"></i>  My Profile</a></li> 
+  <li><a href="/password" class="doc-pending"><i class="fa fa-unlock-alt" aria-hidden="true"></i>  Change password</a></li> 
+  <!-- <li ><a data-toggle="tab" href="#changepwd" class="doc-pending"><i class="fa fa-unlock-alt" aria-hidden="true"></i> Change Password</a></li> -->
+  </ul>
+
+<div class="tab-content documents-status">
+  <div id="myprofile" class="tab-pane in active">
+    {% if messages %}
+      {% for message in messages %}
+        <div class='form-errors text-{% if message.tags %}{{ message.tags }}{% endif %}'>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+    <form method="post" id="profileform">
+    {% csrf_token %}
+    <h4><i class="fa fa-user-circle-o" aria-hidden="true"></i>  My Profile</h4>
+       <hr/>
+  <div class="row">
+    <div class="col-md-4">
+    <label>First Name</label>
+    <input type="text"  value="{{ user.first_name}}" name="first_name" class="form-control">
+    </div>
+       <div class="col-md-4">
+    <label>Last Name</label>
+    <input type="text"  value="{{ user.last_name}}" name="last_name" class="form-control">
+    </div>
+    <div class="col-md-4">
+    <label>Email</label>
+    <input type="text"  value="{{ user.email }}" name="email" class="form-control">
+    </div>
+
+  </div>
+   <div class="row">
+   <br/>
+     <div class="col-md-12">
+        <button type="submit" class="btn btn-primary">Update Details</button>    
+        <button type="reset" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+    </form>
+  </div>
+</div>
+
+</div>
+</div>
+{% endblock main %}
+{% block footer %}
+
+<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/additional-methods.min.js"></script>
+
+<script type="text/javascript">
+$("#profileform").validate({
+        errorClass: "error-class",
+        rules: {
+            email: {
+                required: true,
+                email: true
+            },
+            first_name: {
+                required: true,
+            },
+            last_name:{
+              required: true
+            }
+        }
+    });
+</script>
+{% endblock footer%}

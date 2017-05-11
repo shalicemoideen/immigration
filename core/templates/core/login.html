@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+
+  {% block body %}
+  <div class="container-fluid">
+		<div class="loginarea row">
+        <div class="col-md-12 text-center"><div class="logintitle">Marlabs Legal Department</div> <div class="logintitleshadow">Marlabs Legal Department</div></div>
+        <div class="col-sm-6 text-center"><img src="{% static "images/login-img.png" %}" alt="Immigration"/></div>
+        <div class="col-sm-6">
+        <form action="{% url 'login' %}" method="post" role="form">{% csrf_token %}
+        <h4>Admin Login</h4>
+    {% if form.non_field_errors %}
+    <div class='form-errors text-danger'>
+        {% for error in form.non_field_errors %}
+            <span>{{ error }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="form-group">
+      
+        <div class="input-group">
+          <div class="input-group-addon"><i class="fa fa-user-o" aria-hidden="true"></i></div>
+          {{ form.username }}
+            
+          <!-- <input type="text" class="form-control"  placeholder="Username"> -->
+         </div>
+         {% if form.username.errors %}
+              <span class="text-danger">
+                {% for error in form.username.errors %}{{ error }}{% endfor %}
+              </span>
+            {% endif %}
+          <div class="input-group">
+          <div class="input-group-addon"><i class="fa fa-key" aria-hidden="true"></i></div>
+          {{ form.password }}
+            
+          <!-- <input type="password" class="form-control"  placeholder="Password"> -->
+          
+        </div>
+        {% if form.password.errors %}
+          <span class="text-danger">
+            {% for error in form.password.errors %}{{ error }}{% endfor %}
+          </span>
+        {% endif %}
+      
+  </div>
+   <div class="form-group"><button type="submit" class="btn btn-primary form-control">Submit</button></div>
+
+    <div class="login-help">
+      <a href="/password/reset">Forgot Password</a>
+    </div>
+   <!-- <a href="#" class="forgotpwd">forgot password ?</a> -->
+        </form>
+        </div>
+        </div>
+  </div>
+  <div class="loginbg"></div>
+{% endblock body %}

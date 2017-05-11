@@ -1,0 +1,560 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+  {% block head %}
+	<link href="{% static "css/jquery.dataTables.min.css" %}" rel="stylesheet">
+ 
+  {% endblock %}
+
+{% block main %}
+ <div class="container immigration-doc">
+ 
+ <ul class="nav nav-tabs">
+  <li class="active"><a data-toggle="tab" href="#docrecived" class="doc-received"><i class="fa fa-check" aria-hidden="true"></i> Documents Received</a></li> 
+  <li ><a data-toggle="tab" href="#docpending" class="doc-pending"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Documents Requested</a></li>
+  <li ><a data-toggle="tab" href="#doclisting" class="doc-pending"><i class="fa fa-list" aria-hidden="true"></i> Case Documents </a></li>
+
+</ul>
+
+<div class="tab-content documents-status">
+
+  <div id="docrecived" class="tab-pane in active">
+    <h3>Documents Received</h3>
+    <div class="row">
+      <div class="col-sm-12 col-md-12">
+        <table id="docs-recieved-table" class="display" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th align="center" style="text-align:center"> Download</th>
+                    <th align="center" style="text-align:center"> Delete </th>
+                    
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="docpending" class="tab-pane fade ">
+    <h3>Documents Requested</h3>
+    <button data-toggle="modal" data-target="#addemailid" class="btn btn-success pull-right"><i class="fa fa-plus" aria-hidden="true"></i>
+    Add Request</button>
+    <div class="row">
+      <div class="col-sm-12 col-md-12">
+        <table id="docs-requested-table" class="display" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th align="center" style="text-align:center"> Delete </th>
+                    
+                    
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+     
+  </div>
+
+
+  <div id="doclisting" class="tab-pane fade ">
+    <h3>Case Documents</h3>
+    <button data-toggle="modal" data-target="#adddocumentid" class="btn btn-success pull-right"><i class="fa fa-plus" aria-hidden="true"></i>
+    Add a case</button>
+    <div class="row">
+      <div class="col-sm-12 col-md-12">
+        <table id="docs-listing-table" class="display" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th align="center" style="text-align:center"> Delete </th>
+                </tr>
+            </thead>
+        </table>
+      </div>
+    </div>
+     
+  </div>
+
+  <div id="profile" class="tab-pane fade ">
+    <h3>Profile View</h3>
+    <form action="/home/" method="post" id="profileForm">
+      <div class="row">
+      {% csrf_token %}
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>User Name</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <span>{{ user.username }}</span>
+            <input type="hidden" name="tag" value="profileUpdate">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>First Name</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}"/>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>Last Name</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}"/>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>Email</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="email" name="email" class="form-control" value="{{ user.email }}"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>Old Password</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="old_password" name="old_password" class="form-control" value=""/>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>New Passowrd</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="password" name="password" class="form-control" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-2 col-md-2">
+          <div class="form-group">
+            <label>Confirm New Password</label>
+          </div>
+        </div>
+        <div class="col-sm-4 col-md-4">
+          <div class="form-group">
+            <input type="text" id="password_again" name="password_again" class="form-control" />
+          </div>
+        </div>
+      </div>
+       <div class="form-group">
+              <div class="col-xs-offset-2 col-xs-2">
+                  <button type="submit" class="btn btn-primary">Submit</button>
+                  <button type="reset" class="btn btn-default">Reset</button>
+              </div>
+      </div>
+    </form>
+     
+     
+  </div>
+
+
+  
+</div>
+ </div>
+ 
+
+
+<!-- Popup -->
+
+
+<div id="addemailid" class="modal fade" role="dialog">
+  <div class="modal-dialog modal-lg">
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Add Email</h4>
+      </div>
+      <form id="document-request-form" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+        <div class="row">
+        <div class="col-sm-6">
+          <div class="form-group"><input type="text" id="email" name="email" class="form-control" placeholder="Enter Email Address"/></div>
+          </div>
+          </div>
+          <div class="error redtext" id="mail_error"></div>
+          <div class="row">
+            <div class="col-md-12">
+                <div class="control-group">
+                      <h4>Select cases</h4><br/>
+                        <label id="document-error" class="error-class" for="document" style="display: none;"></label>
+                        <div class="doc-area" id="doc-area">
+
+                        </div>
+                </div>
+            </div>
+          </div>
+
+        </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="request">Request Document</button>
+      </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+<div id="adddocumentid" class="modal fade" role="dialog">
+  <div class="modal-dialog modal-lg">
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Add case</h4>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <textarea id="document" class="form-control" placeholder="Enter case details"></textarea>
+        </div>
+     <div class="error redtext" id="document_error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-default"  id="save_document">Save</button>
+        
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+<div id="wait" class="loader-area">
+<div class="loader-img">
+<img src="{% static "images/reload.svg" %}" /></div></div>
+
+
+{% endblock main %}
+
+<!-- Popup ENDS -->
+  {% block footer %}
+  <script src="{% static "js/jquery.dataTables.min.js" %}"></script>
+  <script src="{% static "js/notify.min.js" %}"></script>
+  <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js" data-turbolinks-track="true"></script>
+  <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/additional-methods.min.js"></script>
+	
+<script>
+$(document).ready(function(){
+
+    var documentRequestValidator = $("#document-request-form").validate({
+        errorClass: "error-class",
+        submitHandler : postFormRequest,
+        rules: {
+            "document": { 
+                    required: true, 
+                    minlength: 1 
+            }, 
+            email: {
+                required: true,
+                email: true
+            }
+        },
+        messages:{
+          "document":"Please select atleast one document..!"
+        }
+    });
+    
+    $("#profileForm").validate({
+      errorClass: "error-class",
+      rules: {
+            email: {
+                required: true,
+                email: true
+            },
+            password: {
+              required:($("#old_password").val().length > 0)? true:false,
+            },
+            password_again: {
+                equalTo: "#password"
+            }
+
+      },
+      messages:{
+        
+      }
+    });
+
+
+     $table = $('#docs-recieved-table').DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax": {
+              "url": "/home",
+              "type": "POST",
+              "data" : function (d) {
+                d.csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val(),
+                d.doctype = 'recieved'
+               }
+          },
+           "createdRow": function ( row, data, index ) {
+              
+              $('td',row).eq(0).html('<a href="/document/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
+              $('td', row).eq(1).html('<center><a class="dwldbtn" href="/downloadDocument?pk='+data.pk+'" title="Download" ><i class="fa fa-download iconFontSize-medium" ></i></a></center>');
+              $('td', row).eq(2).html('<center><a class="deletebtn" onclick="confirmDelete('+data.pk+')" title="delete" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+            },
+
+          "columns": [
+              { "data": "fields[email]" },
+              { "data": "fields[email]" },              
+              { "data": "fields[email]" },              
+          ]
+      } );
+
+
+
+     $table1 = $('#docs-requested-table').DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax": {
+              "url": "/home",
+              "type": "POST",
+              "data" : function (d) {
+                d.csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val(),
+                d.doctype = 'requested'
+               }
+          },
+           "createdRow": function ( row, data, index ) {
+              $('td',row).eq(0).html('<a href="/document/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
+              $('td', row).eq(1).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+            },
+
+          "columns": [
+              { "data": "fields[email]" },
+              { "data": "fields[email]" },
+          ]
+      } );
+
+
+     $table2 = $('#docs-listing-table').DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax": {
+              "url": "/home",
+              "type": "POST",
+              "data" : function (d) {
+                d.csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val(),
+                d.tag = 'listDocument'
+               }
+          },
+           "createdRow": function ( row, data, index ) {
+              $('td',row).eq(0).html(data.fields['name']);
+              $('td',row).eq(1).html('<center><a class="deletebtn" title="delete" onclick="confirmDocDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+            },
+
+          "columns": [
+              { "data": "fields[name]" },
+              { "data": "fields[name]" },
+          ]
+      } );
+
+      
+      $("#save_document").click(function(){
+          var name = $("#document").val();
+          if(name != ''){
+
+              $("#wait").css("display", "block");
+              var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+              $.ajax({
+                url:"/home",
+                data:{name:name,csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'createDocument'},
+                type:"POST",
+                dataType:"JSON",
+                success:function(data){
+                  $("#wait").css("display", "none");
+                  if(data['status'] === 'failure'){
+                    $("#document_error").html(data['error']);
+                  }
+                  else{
+                    
+                    $("#document_error").html('');
+                    $("#document").val('');
+                    $('#adddocumentid').modal('toggle');
+                    $table2.ajax.reload();
+                    $.notify(data['data'],{
+                      style: 'bootstrap',
+                      className: 'success',
+                    });
+                    getAllDocuments();
+                  }
+                }
+              })
+          }
+          else{
+            $("#document_error").html("Please enter document name");
+          }
+      });
+
+
+      $(document).on('click','.check-documents',function(){
+        console.log($(this),"log",$(this).prop("checked"));
+        if($(this).prop("checked") == true){
+          $(this).next().next(".check-required-document").css('display','block');  
+        }
+        else{
+          $(this).next().next(".check-required-document").css('display','none');
+        }
+        
+      })
+      getAllDocuments();
+    $('[data-toggle="tooltip"]').tooltip(); 
+    
+});
+
+function postFormRequest(form) {
+  $("#wait").css("display", "block");
+  $("#mail_error").html('');
+  $.post('/home',
+      $(form).serialize()+"&tag=createDocumentRequest",
+      function (response) { 
+        
+          $("#wait").css("display", "none");
+          if(response['status'] === 'failure'){
+            $("#mail_error").html(response['error']);
+          }
+          else{
+            $("#mail_error").html('');
+            $("#email").val('');
+            $('#addemailid').modal('toggle');
+            $table1.ajax.reload();
+            $.notify(response['data'],{
+              style: 'bootstrap',
+              className: 'success',
+            });
+          }
+      }, 
+      'json');
+}
+
+function isEmail(email) {
+  var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  return regex.test(email);
+}
+
+function confirmDelete(pk){
+  var conf = "Do you want to delete member document details?";
+  if(pk != ''){
+    if(confirm(conf)){
+        var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+            $.ajax({
+              url:"/home",
+              data:{pk:pk,csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'deleteEmployee'},
+              type:"POST",
+              dataType:"JSON",
+              success:function(data){
+                if(data['status'] === 'success'){
+                  $table.ajax.reload();
+                  $table1.ajax.reload();
+                  $.notify(data['data'],{
+                    style: 'bootstrap',
+                    className: 'success',
+                  });
+                }
+              }
+            });
+    }
+  }
+}
+
+function getAllDocuments(){
+  var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+  $.ajax({
+    url:"/home",
+    data:{csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'getAllDocuments'},
+    type:"POST",
+    dataType:"JSON",
+    success:function(data){
+      if(data['status'] === 'success'){
+        
+        var html_data="";
+        for(i in data['data']){
+          html_data+='<label class="control control-checkbox">'+data['data'][i]['fields']['name'];
+          html_data+='<input type="checkbox" name="document" class="check-documents" value="'+data['data'][i]['pk']+'"/>';
+          html_data+='<div class="control_indicator"></div>';
+          html_data+='<div class="check-required-document" style="display:none;">';
+          html_data+='<input type="checkbox" name="document_required_'+data['data'][i]['pk']+'" checked data-toggle="toggle" data-on="Required" data-off="Optional" data-onstyle="danger" data-offstyle="success" class="bootstrap_checkbox"></div>';
+          html_data+='</label>';          
+        }
+
+        $("#doc-area").html(html_data);
+        $('.bootstrap_checkbox').bootstrapToggle(); 
+        
+      }
+    }
+  });
+}
+
+
+
+function confirmDocDelete(pk){
+  var conf = "Do you want to delete document details?";
+  if(pk != ''){
+    if(confirm(conf)){
+        var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+            $.ajax({
+              url:"/home",
+              data:{pk:pk,csrfmiddlewaretoken:csrfmiddlewaretoken,'tag':'deleteDocument'},
+              type:"POST",
+              dataType:"JSON",
+              success:function(data){
+                if(data['status'] === 'success'){
+                  $table2.ajax.reload();
+                  $.notify(data['data'],{
+                    style: 'bootstrap',
+                    className: 'success',
+                  });
+                  getAllDocuments();
+                }
+              }
+            });
+    }
+  }
+}
+</script>
+  
+
+{% endblock footer %}
+

@@ -1,0 +1,67 @@
+{% load staticfiles i18n %}<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Immigartion | Marlabs Legal Department</title>
+    <link rel="shortcut icon" href="images/favicon.png">
+    <!-- Bootstrap -->
+    <link href="{% static "css/bootstrap.css" %}" rel="stylesheet">
+    <link href="{% static "css/font-awesome.min.css" %}" rel="stylesheet">
+    <link href="{% static "css/custom.css" %}" rel="stylesheet">
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    {% block head %}{% endblock %}
+  </head>
+
+  <body>
+    {% block body %}
+
+  <!-- header-->
+  <header>
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/home"><img src="{% static "images/marlabs-icon.png" %}" alt="OneConsole, Service and Operations Management. Business Service Management."/></a><h1> <span>Immigration</span> - Marlabs Legal Department</h1>
+         
+        </div> 
+        <ul class="nav navbar-nav navbar-right ">
+        <li>
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">{{ request.user.username }} 
+        <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="/profile"><i class="fa fa-user-circle-o" aria-hidden="true"></i> 
+ My Profile</a></li>
+          <li class="signout"><a href="{% url 'logout' %}"><i class="fa fa-sign-out" aria-hidden="true"></i> Sign Out</a></li>   
+        
+        </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+   <!-- header ENDS-->
+
+      <main>
+        <div class="container">
+          {% block main %}
+          {% endblock main %}
+        </div>
+      </main>
+
+      
+      
+    {% endblock body %}
+
+    <script src="{% static "js/jquery-1.11.3.min.js" %}"></script>
+    <script src="{% static "js/bootstrap.js" %}"></script>
+
+    {% block footer %}
+
+    {% endblock footer %}
+    
+  </body>
+</html>
