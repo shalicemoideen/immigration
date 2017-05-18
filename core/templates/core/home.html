@@ -3,6 +3,7 @@
 {% load i18n %}
   {% block head %}
 	<link href="{% static "css/jquery.dataTables.min.css" %}" rel="stylesheet">
+  <link href="{% static "css/wizard.css" %}" rel="stylesheet">
  
   {% endblock %}
 
@@ -26,6 +27,7 @@
             <thead>
                 <tr>
                     <th>Email</th>
+                    <th>Recieved Date</th>
                     <th align="center" style="text-align:center"> Download</th>
                     <th align="center" style="text-align:center"> Delete </th>
                     
@@ -47,6 +49,7 @@
             <thead>
                 <tr>
                     <th>Email</th>
+                    <th>Requested Date</th>
                     <th align="center" style="text-align:center"> Delete </th>
                     
                     
@@ -197,35 +200,100 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Add Email</h4>
+        <h3 class="page-heading"> Request email </h3>
       </div>
-      <form id="document-request-form" method="post">
-        {% csrf_token %}
-        <div class="modal-body">
-        <div class="row">
-        <div class="col-sm-6">
-          <div class="form-group"><input type="text" id="email" name="email" class="form-control" placeholder="Enter Email Address"/></div>
-          </div>
-          </div>
-          <div class="error redtext" id="mail_error"></div>
-          <div class="row">
-            <div class="col-md-12">
-                <div class="control-group">
-                      <h4>Select cases</h4><br/>
-                        <label id="document-error" class="error-class" for="document" style="display: none;"></label>
-                        <div class="doc-area" id="doc-area">
 
-                        </div>
-                </div>
+      <section>
+
+        <div class="wizard">
+            <div class="wizard-inner">
+                <div class="connecting-line"></div>
+                <ul class="nav nav-tabs" role="tablist">
+
+                    <li role="presentation" class="active">
+                        <a href="#step1" data-toggle="tab" aria-controls="step1" role="tab" title="Step 1">
+                            <span class="round-tab">
+                                <i class="glyphicon glyphicon-upload"></i>
+                            </span>
+                        </a>
+                    </li>
+
+                    <li role="presentation" class="disabled">
+                        <a href="#step2" data-toggle="tab" aria-controls="step2" role="tab" title="Step 2">
+                            <span class="round-tab">
+                                <i class="glyphicon glyphicon-check"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    
+                </ul>
             </div>
-          </div>
 
+            
+                <div class="tab-content">
+               
+                    <div class="tab-pane active" role="tabpanel" id="step1">
+                        
+                        <div class="row">
+                          <div class="col-md-6">
+                              <h4 class="page-heading">Add email</h4>
+                          </div>
+                        </div>
+                        <form id="document-request-form" method="post">
+                          {% csrf_token %}
+                          <div class="modal-body">
+                          <div class="row">
+                          <div class="col-sm-6">
+                            <div class="form-group"><input type="text" id="request_email" name="email" class="form-control" placeholder="Enter Email Address"/></div>
+                            </div>
+                            </div>
+                            <!-- <div class="error redtext" id="mail_error"></div> -->
+                            <div class="row">
+                              <div class="col-md-12">
+                                  <div class="control-group">
+                                        <h4>Select cases</h4><br/>
+                                          <label id="document-error" class="error-class" for="document" style="display: none;"></label>
+                                          <div class="doc-area" id="doc-area">
+
+                                          </div>
+                                  </div>
+                              </div>
+                            </div>
+
+                          </div>
+
+                        
+
+                        <ul class="list-inline pull-right">
+                            <li><button type="button" id="request_document" class="btn btn-primary next-step">Save and continue</button></li>
+                        </ul>
+                        </form>
+                    </div>
+                    
+                   
+                    <div class="tab-pane" role="tabpanel" id="step2">
+                   
+                        <h5>Please verify the documents and send request to this mail id <b id="verify_email"> </b></h5>
+                        <p id="verify_request"></p>
+                        <ul class="list-inline pull-right">
+                            <li>  <div class="error redtext" id="mail_error"></div></li>
+                            <li><button type="button" class="btn btn-default prev-step">Previous</button></li>
+                            <li><button type="button" id="submit_request" class="btn btn-primary next-step">Submit request</button></li>
+                        </ul>               
+                                
+                   </div>
+                </div>
+            
         </div>
-      
-      <div class="modal-footer">
+        
+      </section>
+   
+      <!-- <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button type="submit" class="btn btn-primary" id="request">Request Document</button>
-      </div>
+      </div> -->
       </form>
     </div>
 
@@ -297,6 +365,77 @@ $(document).ready(function(){
           "document":"Please select atleast one document..!"
         }
     });
+
+
+    $('.nav-tabs > li a[title]').tooltip();
+    
+    //Wizard
+    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+
+        var $target = $(e.target);
+    
+        if ($target.parent().hasClass('disabled')) {
+            return false;
+        }
+    });
+
+    // $(".next-step").click(function (e) {
+    //     var $active = $('.wizard .nav-tabs li.active');
+    //     $active.next().removeClass('disabled');
+    //     nextTab($active);
+
+    // });
+    $(".prev-step").click(function (e) {
+
+        var $active = $('.wizard .nav-tabs li.active');
+        prevTab($active);
+
+    });
+
+    $("#submit_request").on('click',function(){
+      postFormRequest($("#document-request-form"));
+
+    })
+
+    $('#request_document').on('click', function() {
+      console.log("clicked here");
+        if($("#document-request-form").valid()){
+          table = "<table class='table'><tr><th>Document</th><th>Required</th></tr>";
+          
+           $("input[type=checkbox]:checked").each(function(i){
+            val = $(this).val();
+            
+            if(val != "on"){
+                var required_val = $('input[type=checkbox][name=document_required_'+val+']').is(":checked");
+                console.log(required_val,"required_val");
+                
+                if(required_val == true){
+                  req_html = "Required";
+                }
+                else{
+                  req_html = "Optional";
+                }
+
+                table+='<tr><td>'+$(this).prev( ".check-label" ).html()+'</td><td>'+req_html+'</td></tr>';
+            }
+            $("#verify_request").html(table);
+            $("#verify_email").html($("#request_email").val());
+
+            
+            
+          });
+          var $active = $('.wizard .nav-tabs li.active');
+          $active.next().removeClass('disabled');
+          nextTab($active);
+        }
+
+    });
+
+    var documentRequestValidator = $("#document-request-confirm-form").validate({
+        errorClass: "error-class",
+        submitHandler : postFormRequest,
+       
+    });
     
     $("#profileForm").validate({
       errorClass: "error-class",
@@ -331,14 +470,25 @@ $(document).ready(function(){
                }
           },
            "createdRow": function ( row, data, index ) {
+              var date_format = '';
+              var requested_date = data.fields['reported_date'];
+              if(requested_date){
+                date = requested_date.split("T");
+                time = date[1].split(".");
+                format = date[0].split("-");
+                date_format = format[2]+"-"+format[1]+"-"+format[0]+" "+time[0];
+              }
               
-              $('td',row).eq(0).html('<a href="/document/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
-              $('td', row).eq(1).html('<center><a class="dwldbtn" href="/downloadDocument?pk='+data.pk+'" title="Download" ><i class="fa fa-download iconFontSize-medium" ></i></a></center>');
-              $('td', row).eq(2).html('<center><a class="deletebtn" onclick="confirmDelete('+data.pk+')" title="delete" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+
+              $('td',row).eq(0).html('<a href="/documentlist/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
+              $('td',row).eq(1).html(date_format);
+              $('td', row).eq(2).html('<center><a class="dwldbtn" href="/downloadDocument?pk='+data.pk+'" title="Download" ><i class="fa fa-download iconFontSize-medium" ></i></a></center>');
+              $('td', row).eq(3).html('<center><a class="deletebtn" onclick="confirmDelete('+data.pk+')" title="delete" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
             },
 
           "columns": [
               { "data": "fields[email]" },
+              { "data": "fields[email]" },              
               { "data": "fields[email]" },              
               { "data": "fields[email]" },              
           ]
@@ -358,11 +508,19 @@ $(document).ready(function(){
                }
           },
            "createdRow": function ( row, data, index ) {
-              $('td',row).eq(0).html('<a href="/document/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
-              $('td', row).eq(1).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+            var requested_date = data.fields['requested_date'];
+            date = requested_date.split("T");
+            time = date[1].split(".");
+            format = date[0].split("-");
+            date_format = format[2]+"-"+format[1]+"-"+format[0]+" "+time[0];
+
+              $('td',row).eq(0).html('<a href="/documentlist/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
+              $('td',row).eq(1).html(date_format);
+              $('td', row).eq(2).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
             },
 
           "columns": [
+              { "data": "fields[email]" },
               { "data": "fields[email]" },
               { "data": "fields[email]" },
           ]
@@ -430,7 +588,7 @@ $(document).ready(function(){
 
 
       $(document).on('click','.check-documents',function(){
-        console.log($(this),"log",$(this).prop("checked"));
+        
         if($(this).prop("checked") == true){
           $(this).next().next(".check-required-document").css('display','block');  
         }
@@ -478,23 +636,25 @@ function confirmDelete(pk){
   var conf = "Do you want to delete member document details?";
   if(pk != ''){
     if(confirm(conf)){
+        $("#wait").css("display", "block");
         var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
-            $.ajax({
-              url:"/home",
-              data:{pk:pk,csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'deleteEmployee'},
-              type:"POST",
-              dataType:"JSON",
-              success:function(data){
-                if(data['status'] === 'success'){
-                  $table.ajax.reload();
-                  $table1.ajax.reload();
-                  $.notify(data['data'],{
-                    style: 'bootstrap',
-                    className: 'success',
-                  });
-                }
-              }
-            });
+        $.ajax({
+          url:"/home",
+          data:{pk:pk,csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'deleteEmployee'},
+          type:"POST",
+          dataType:"JSON",
+          success:function(data){
+            $("#wait").css("display", "none");
+            if(data['status'] === 'success'){
+              $table.ajax.reload();
+              $table1.ajax.reload();
+              $.notify(data['data'],{
+                style: 'bootstrap',
+                className: 'success',
+              });
+            }
+          }
+        });
     }
   }
 }
@@ -511,7 +671,7 @@ function getAllDocuments(){
         
         var html_data="";
         for(i in data['data']){
-          html_data+='<label class="control control-checkbox">'+data['data'][i]['fields']['name'];
+          html_data+='<label class="control control-checkbox"><span class="check-label">'+data['data'][i]['fields']['name']+'</span>';
           html_data+='<input type="checkbox" name="document" class="check-documents" value="'+data['data'][i]['pk']+'"/>';
           html_data+='<div class="control_indicator"></div>';
           html_data+='<div class="check-required-document" style="display:none;">';
@@ -552,6 +712,14 @@ function confirmDocDelete(pk){
             });
     }
   }
+}
+
+
+function nextTab(elem) {
+    $(elem).next().find('a[data-toggle="tab"]').click();
+}
+function prevTab(elem) {
+    $(elem).prev().find('a[data-toggle="tab"]').click();
 }
 </script>
   

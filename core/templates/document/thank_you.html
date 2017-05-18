@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+{% block head %}
+    <link href="{% static "css/bootstrap-datepicker.min.css" %}" rel="stylesheet">
+  {% endblock %}
+
+{% block body %}
+<body>
+
+ 
+  <nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#"><img src="{% static "images/marlabs-icon.png" %}" alt="OneConsole, Service and Operations Management. Business Service Management."/></a><h1> <span>Immigration</span> - Marlabs Legal Department</h1>
+     
+    </div> 
+    
+  </div>
+</nav>
+
+<div class="container text-center">
+  <img style="margin-top: 30px; max-width:100%;" src="{% static "images/thank-you.png" %}" alt="Thank you"/>
+</div>
+
+{% endblock body %}
+ 
+ 
+
+
+
+
+	{% block footer %}
+
+	
+	<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/additional-methods.min.js"></script>
+
+	
+<script>
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip(); 
+    
+});
+</script>
+{% endblock footer %}

@@ -8,15 +8,18 @@ from django.contrib.auth.decorators import login_required
 
 
 from core.forms import LoginForm, EmailValidationOnForgotPassword
-from core.views import HomeClass, DocumentClass, ChangePassword, Profile
+from core.views import HomeClass, DocumentClass, ChangePassword, Profile, Documentlogin, ConfirmRequest, DocumentList
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^$', auth_views.login, {'template_name': 'core/login.html' ,'authentication_form': LoginForm},name='login'),
     url(r'^login', auth_views.login, {'template_name': 'core/login.html','authentication_form': LoginForm},name='login'),
     url(r'^logout', auth_views.logout, {'next_page': '/'}, name='logout'),
+    url(r'^documentlist/',login_required(DocumentList.as_view()), name='document-list'),
     url(r'^home',login_required(HomeClass.as_view()), name='home'),
     url(r'^document',DocumentClass.as_view(), name='document'),
+    url(r'^doclogin',Documentlogin.as_view(), name='document-login'),    
+    url(r'^confirmrequest',ConfirmRequest.as_view(), name='confirm-request'),
     url(r'^downloadDocument$', 'core.views.downloadDocument', name='download-document'),
     url(r'^password$', login_required(ChangePassword.as_view()), name='password'),
     url(r'^profile$', login_required(Profile.as_view()), name='profile'),

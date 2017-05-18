@@ -15,10 +15,9 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
 from django.template import Context
 from django.contrib.auth.models import User
-
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-
+from datetime import datetime
 
 from core.forms import DocumentForm
 from immigration.settings import BASE_URL, MEDIA_URL
@@ -54,16 +53,16 @@ class HomeClass(View):
         doctype = request.POST.get('doctype', None) if request.POST.get('doctype', None) else 'recieved'
         if doctype == 'recieved':
             if username:
-                obj = Employee.objects.filter(status__exact=1,
+                obj = Employee.objects.filter(completed__exact=1,
                                               email__contains=username).order_by('-pk')
             else:
-                obj = Employee.objects.filter(status__exact=1).order_by('-pk')
+                obj = Employee.objects.filter(completed__exact=1).order_by('-pk')
         else:
             if username:
-                obj = Employee.objects.filter(status__exact=0,
+                obj = Employee.objects.filter(completed__exact=0,
                                               email__contains=username).order_by('-pk')
             else:
-                obj = Employee.objects.filter(status__exact=0).order_by('-pk')
+                obj = Employee.objects.filter(completed__exact=0).order_by('-pk')
         draw = request.POST.get('draw', None)
         length = request.POST.get('length', None)
         start = request.POST.get('start', None)
@@ -144,13 +143,13 @@ class HomeClass(View):
                     subject, from_email, to = 'Marlabs Immigration Document Upload Form', 'noreply@marlabs.com', "%s" %(email)
                     print subject, from_email, to
                     # email = urllib.quote(email, safe='')
-                    url = "%sdocument/?pk=%s&token=%s" % (BASE_URL, s.id, unique_id)
+                    url = "%sdoclogin/?pk=%s" % (BASE_URL, s.id)
                     text_content = 'This is an important message.'
 
                     plaintext = get_template('core/email.txt')
                     htmly = get_template('core/email.html')
 
-                    d = Context({'url': url})
+                    d = Context({'url': url ,'token': unique_id})
                     text_content = plaintext.render(d)
                     html_content = htmly.render(d)
                     msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
@@ -176,12 +175,27 @@ class HomeClass(View):
     def deleteEmployee(self, request):
         pk = request.POST.get('pk', None)
         if pk:
-            Employee.objects.filter(pk=pk).delete()
+            # Employee.objects.filter(pk=pk).delete()
+            empDel = Employee.objects.get(pk=pk)
+            email = empDel.email
+            completed = empDel.completed
+            empDel.delete()
+            if(completed == False):
+                subject, from_email, to = 'Marlabs Immigration Document Upload Form - Request Cancelled', 'legal@marlabs.com', "%s" %(email)
+                print subject, from_email, to
+                text_content = 'This is an important message.'
+                plaintext = get_template('core/email_cancelled.txt')
+                htmly = get_template('core/email_cancelled.html')
+                d = Context({})
+                text_content = plaintext.render(d)
+                html_content = htmly.render(d)
+                msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
             # empDel = Employee.objects.filter(pk=pk)
             # empDocs = EmployeeDocument.objects.filter(employee_id = pk)
             # for empDoc in empDocs:
             #     empDoc.file.delete()
-
             result = {'status': 'success', 'data': 'Deleted successfully'}
         else:
             result = {'status': 'failure', 'error': 'Something went wrong..!'}
@@ -214,7 +228,81 @@ class HomeClass(View):
         #     user.save()
 
 
+class Documentlogin(View):
+    template_name = 'document/login.html'
+    template_add = 'document/add.html'
+    error_page = 'document/error.html'
 
+    def get(self, request, *args, **kwargs):
+        pk = request.GET.get('pk', None)
+        if pk is None or pk == '':
+            return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
+        else:
+            if Employee.objects.filter(pk=pk).exists():
+                return render(request, self.template_name, {'pk': pk})
+            else:
+                return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
+
+    def post(self, request, *args, **kwargs):
+        pk = request.POST.get('pk', None)
+        token = request.POST.get('token', None)
+        data = {'pk': pk, 'token': token}
+
+        form = DocumentForm()
+        if (pk is None or pk == '') or (token is None or token == ''):
+            messages.error(request, 'Invalid token')
+            return render(request, self.template_name, {'pk': pk})
+        else:
+            is_exist = Employee.objects.filter(pk=pk, token=token, completed=False).exists()
+            authenticated = 0
+            if is_exist:
+                documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
+                employee_email = Employee.objects.get(pk=pk).email
+                request_status = Employee.objects.get(pk=pk).status
+                return render(request, self.template_add, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated, 'request_status': request_status})
+            else:
+                # <ul><li>Invalid token</li><li>YOur request has been canceled by marlabs admin</li></ul>
+                messages.error(request, 'Invalid token')
+                return render(request, self.template_name, {'pk': pk})
+        
+
+class ConfirmRequest(View):
+    error_page = 'document/error.html'
+    thank_page = 'document/thank_you.html'
+
+    def post(self, request, *args, **kwargs):
+        pk = request.POST.get('pk', None)
+        if pk is None or pk == '':
+            return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
+        else:
+            if Employee.objects.filter(pk=pk).exists():
+                obj = Employee.objects.get(pk=pk)
+                obj.completed = True
+                obj.save()
+                return render(request, self.thank_page)
+            else:
+                return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
+
+
+class DocumentList(View):
+    template_name = 'document/list.html'
+    error_page = 'document/error.html'
+
+    def get(self, request, *args, **kwargs):
+        pk = request.GET.get('pk', None)
+        if pk is None:
+            return render(request, self.template_name, {'error': 1})
+        else:
+            is_exist = Employee.objects.filter(pk=pk).exists()
+            authenticated = 1
+            if is_exist:
+                documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
+                employee_email = Employee.objects.get(pk=pk).email
+                return render(request, self.template_name, { 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated})
+            else:
+                return render(request, self.error_page, {'error': 1, 'authenticated': authenticated})
+        return render(request, self.error_page, {'form': form, 'data': data, 'authenticated': authenticated})
+                
 
 class DocumentClass(View):
     template_name = 'document/add.html'
@@ -252,8 +340,6 @@ class DocumentClass(View):
         documentslist = request.POST.getlist('document')
 
         documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
-        print documents,"documents"
-        print documentslist,"documentslist"
         for documentlist in documentslist:
             uploadfile = request.FILES.get('upload_document_'+documentlist, '')
             print uploadfile
@@ -265,8 +351,11 @@ class DocumentClass(View):
                 e = Employee.objects.get(pk=pk)
                 e.status = 1
                 e.save()
-        messages.success(request, 'Your documents uploaded successfully')
-        return render(request, self.template_name, {'form': form, 'status': "success", 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'authenticated': 0})
+        em = Employee.objects.get(pk=pk)
+        em.reported_date = datetime.now()
+        em.save()
+        # messages.success(request, 'Your documents uploaded successfully')
+        return render(request, 'document/verify.html', {'form': form, 'status': "success", 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'authenticated': 0})
 
 
 def downloadDocument(request):
@@ -331,27 +420,26 @@ class ChangePassword(View):
             'form': form
         })
 
+
 class Profile(View):
     """profile view"""
     def get(self, request, *args, **kwargs):
         user = request.user
         return render(request, 'core/profile.html', {'user': user})
-    
+
     def post(self, request, *args, **kwargs):
         user = User.objects.get(id=request.user.id)
         email = request.POST.get('email', None)
         first_name = request.POST.get('first_name', None)
         last_name = request.POST.get('last_name', None)
         if email:
-            user.email=email
+            user.email = email
             user.save()
         if first_name:
-            user.first_name=first_name
+            user.first_name = first_name
             user.save()
         if last_name:
-            user.last_name=last_name
+            user.last_name = last_name
             user.save()
         messages.success(request, 'Your profile has been successfully updated')
         return render(request, 'core/profile.html', {'user': user})
-        
-    

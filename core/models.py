@@ -9,6 +9,7 @@ class Employee(models.Model):
 	reported_date  = models.DateTimeField(blank=True, null=True)
 	token = models.CharField(max_length=200)
 	status = models.BooleanField(default=False)
+	completed = models.BooleanField(default=False)
 
 	class Meta:
 		verbose_name = _("Employee")

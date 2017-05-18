@@ -10,9 +10,6 @@
             color: #000;
         }
     </style>
-
-
-
   {% endblock %}
 
 {% block body %}
@@ -61,18 +58,18 @@
                 <div class="connecting-line"></div>
                 <ul class="nav nav-tabs" role="tablist">
 
-                    <li role="presentation" class="active">
-                        <a href="#step1" data-toggle="tab" aria-controls="step1" role="tab" title="Step 1">
+                    <li role="presentation" >
+                        <a href="#step1" class="disabled" data-toggle="tab" aria-controls="step1" role="tab" title="Step 1">
                             <span class="round-tab">
                                 <i class="glyphicon glyphicon-upload"></i>
                             </span>
                         </a>
                     </li>
 
-                    <li role="presentation" class="disabled">
+                    <li role="presentation" class="active">
                         <a href="#step2" data-toggle="tab" aria-controls="step2" role="tab" title="Step 2">
                             <span class="round-tab">
-                                <i class="glyphicon glyphicon-check"></i>
+                                <i class="glyphicon glyphicon-floppy-saved"></i>
                             </span>
                         </a>
                     </li>
@@ -85,7 +82,7 @@
             
                 <div class="tab-content">
                
-                    <div class="tab-pane active" role="tabpanel" id="step1">
+                    <div class="tab-pane " role="tabpanel" id="step1">
                         
                         <div class="row">
                           <div class="col-md-6">
@@ -167,22 +164,78 @@
                         <ul class="list-inline pull-right">
                             <li><button type="submit" id="save_document" class="btn btn-primary next-step">Save and continue</button></li>
                         </ul>
+                        </form>
                     </div>
-                    </form>
                    
-                    <div class="tab-pane" role="tabpanel" id="step2">
+                    <div class="tab-pane active" role="tabpanel" id="step2">
                    
-                        <h3>Step 2</h3>
-                        <p>This is step 2</p>
+                        <div class="row">
+                          <h4>Please verify the uploaded documents and complete the process</h4>
+                          
+                          <form action="/confirmrequest" method="post" class="form-horizontal">
+                          <div class="col-md-12">
+                              {% csrf_token %}
+                              <input type="hidden" name="pk" id="pk" value="{{ data.pk }}">
+                              {{ form.non_field_errors }}
+                                  <table class="table table-bordered custom-tbl">
+                                      <thead>
+                                        <tr>
+                                          <th>Document</th>
+                                          <th>Required/Optional</th>
+                                          <th>Submitted/Not submitted</th>
+                                     
+                                        </tr>
+                                      
+                                      </thead>
+                                      <tbody>
+                                      {% for document in documents %}
+                                        <tr>
+                                        <input type="hidden" name="document" value="{{ document.pk }}">
+                                        {%  if document.status == True %}
+                                          <td>
+                                              <a href="{{ media_url }}{{ document.file }}" target="_blank">
+                                              {{ document.document }}
+                                              </a>
+                                          </td>
+                                          {% else %}
+                                          <td>
+                                              {{ document.document }}
+                                              
+                                          </td>
+                                          {% endif %}
+                                          {%  if document.required == True %}
+                                           <td><span class="label label-danger">Required</span></td>
+                                          {% else %}
+                                              <td><span class="label label-info">Optional </span></td>
+                                          {% endif %}
+
+                                          {%  if document.status == True %}
+                                           <td>
+                                              <span class="label label-success"> Submitted </span>
+                                          </td>
+                                          {% else %}
+                                              <td><span class="label label-warning">Not submitted</span></td>
+                                          {% endif %}
+                                          
+                                        </tr>
+
+                                      {% endfor %}
+
+
+                                      </tbody>
+                                      
+                                  </table>
+                              
+                          </div>
+                        </div>
                         <ul class="list-inline pull-right">
                             <li><button type="button" class="btn btn-default prev-step">Previous</button></li>
-                            <li><button type="button" class="btn btn-primary next-step">Save and continue</button></li>
+                            <li><button type="submit" class="btn btn-primary next-step">Finish</button></li>
                         </ul>               
-                                
+                      </form>      
                    </div>
                 </div>
-            
-        </div>
+            </div>
     </section>
    </div>
 </div>
@@ -207,19 +260,6 @@
 <script>
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip(); 
-
-     $('.nav-tabs > li a[title]').tooltip();
-    
-    //Wizard
-    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
-
-        var $target = $(e.target);
-    
-        if ($target.parent().hasClass('disabled')) {
-            return false;
-        }
-    });
-
     $('.datepicker').datepicker({
     	autoclose: true,
     	format: "dd/mm/yyyy"
@@ -259,75 +299,47 @@ $(document).ready(function(){
         return this.optional(element) || (element.files[0].size <= param) 
     });
 
-    $("#confirm_document").click(function(){
-          var conf = confirm("Do you want to confirm the request, your request will be send to admin");
-          if(conf){
-              pk =$("#pk").val();
-              $("#wait").css("display", "block");
-              var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
-              $.ajax({
-                url:"/confirmrequest",
-                data:{pk:pk,csrfmiddlewaretoken:csrfmiddlewaretoken},
-                type:"POST",
-                dataType:"JSON",
-                success:function(data){
-                  $("#wait").css("display", "none");
-                  if(data['status'] === 'failure'){
-                    $("#document_error").html(data['error']);
-                  }
-                  else{
-                    $("#document_error").html('');
-                    $('#upload_complete').modal('toggle');
-                    $.notify(data['data'],{
-                      style: 'bootstrap',
-                      className: 'success',
-                    });
-                    
-                  }
-                }
-              })
-          }
-      });
+    
 
 
 });
 
 
 
-// $(document).ready(function () {
-//     //Initialize tooltips
-//     $('.nav-tabs > li a[title]').tooltip();
+$(document).ready(function () {
+    //Initialize tooltips
+    $('.nav-tabs > li a[title]').tooltip();
     
-//     //Wizard
-//     $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+    //Wizard
+    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
 
-//         var $target = $(e.target);
+        var $target = $(e.target);
     
-//         if ($target.parent().hasClass('disabled')) {
-//             return false;
-//         }
-//     });
+        if ($target.parent().hasClass('disabled')) {
+            return false;
+        }
+    });
 
-//     $(".next-step").click(function (e) {
+    $(".next-step").click(function (e) {
 
-//         var $active = $('.wizard .nav-tabs li.active');
-//         $active.next().removeClass('disabled');
-//         nextTab($active);
+        var $active = $('.wizard .nav-tabs li.active');
+        $active.next().removeClass('disabled');
+        nextTab($active);
 
-//     });
-//     $(".prev-step").click(function (e) {
+    });
+    $(".prev-step").click(function (e) {
 
-//         var $active = $('.wizard .nav-tabs li.active');
-//         prevTab($active);
+        var $active = $('.wizard .nav-tabs li.active');
+        prevTab($active);
 
-//     });
-// });
+    });
+});
 
-// function nextTab(elem) {
-//     $(elem).next().find('a[data-toggle="tab"]').click();
-// }
-// function prevTab(elem) {
-//     $(elem).prev().find('a[data-toggle="tab"]').click();
-// }
+function nextTab(elem) {
+    $(elem).next().find('a[data-toggle="tab"]').click();
+}
+function prevTab(elem) {
+    $(elem).prev().find('a[data-toggle="tab"]').click();
+}
 </script>
 {% endblock footer %}
