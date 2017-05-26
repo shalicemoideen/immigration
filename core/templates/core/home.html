@@ -27,7 +27,8 @@
             <thead>
                 <tr>
                     <th>Email</th>
-                    <th>Recieved Date</th>
+                    <th>Subject</th>
+                    <th>Received Date</th>
                     <th align="center" style="text-align:center"> Download</th>
                     <th align="center" style="text-align:center"> Delete </th>
                     
@@ -49,6 +50,7 @@
             <thead>
                 <tr>
                     <th>Email</th>
+                    <th>Subject</th>
                     <th>Requested Date</th>
                     <th align="center" style="text-align:center"> Delete </th>
                     
@@ -194,7 +196,7 @@
 <!-- Popup -->
 
 
-<div id="addemailid" class="modal fade" role="dialog">
+<div id="addemailid" class="modal fade modalnull" role="dialog">
   <div class="modal-dialog modal-lg">
 
     <div class="modal-content">
@@ -210,7 +212,7 @@
                 <div class="connecting-line"></div>
                 <ul class="nav nav-tabs" role="tablist">
 
-                    <li role="presentation" class="active">
+                    <li role="presentation" class="active" name="step1">
                         <a href="#step1" data-toggle="tab" aria-controls="step1" role="tab" title="Step 1">
                             <span class="round-tab">
                                 <i class="glyphicon glyphicon-upload"></i>
@@ -218,7 +220,7 @@
                         </a>
                     </li>
 
-                    <li role="presentation" class="disabled">
+                    <li role="presentation" class="disabled" name="step2">
                         <a href="#step2" data-toggle="tab" aria-controls="step2" role="tab" title="Step 2">
                             <span class="round-tab">
                                 <i class="glyphicon glyphicon-check"></i>
@@ -246,9 +248,27 @@
                           <div class="modal-body">
                           <div class="row">
                           <div class="col-sm-6">
-                            <div class="form-group"><input type="text" id="request_email" name="email" class="form-control" placeholder="Enter Email Address"/></div>
+                            <div class="form-group">
+                              <input type="text" id="employee_name" name="name" class="form-control" placeholder="Name"/>
                             </div>
+                          </div>
+                          <div class="col-sm-6">
+                            <div class="form-group">
+                              <input type="text" id="request_email" name="email" class="form-control" placeholder="Email To Address"/>
                             </div>
+                          </div>
+                          
+                          <div class="col-sm-6">
+                            <div class="form-group">
+                              <input type="text" id="email_subject" name="subject" class="form-control" placeholder="Subject"/>
+                            </div>
+                          </div>
+                          <div class="col-sm-6">
+                            <div class="form-group">
+                              <input type="text" id="email_copy" name="cc_email" class="form-control" placeholder="Email cc (comma seperate)"/>
+                            </div>
+                          </div>
+                          </div>
                             <!-- <div class="error redtext" id="mail_error"></div> -->
                             <div class="row">
                               <div class="col-md-12">
@@ -348,6 +368,28 @@
 <script>
 $(document).ready(function(){
 
+    $(".modalnull").on("hidden.bs.modal", function(){
+        // $(".modal-body").html("");
+        $("#request_email").val('');
+        $("#employee_name").val('');
+        $("#email_copy").val('');
+        $("#email_subject").val('');
+        $("#request_email-error").html('');
+        $("#document-error").html('');
+        $("#verify_email").html('');
+        $("#verify_request").html('');
+        $("#mail_error").html('');
+        getAllDocuments();
+
+        var $active = $('.wizard .nav-tabs li.active');
+        prevTab($active);
+        var step = $active.attr("name");
+        if(step == "step2"){
+          $active.addClass('disabled');
+        }
+        
+    });
+
     var documentRequestValidator = $("#document-request-form").validate({
         errorClass: "error-class",
         submitHandler : postFormRequest,
@@ -359,6 +401,10 @@ $(document).ready(function(){
             email: {
                 required: true,
                 email: true
+            },
+            cc_email:{
+              required: false,
+              multiemail:true
             }
         },
         messages:{
@@ -400,7 +446,7 @@ $(document).ready(function(){
     $('#request_document').on('click', function() {
       console.log("clicked here");
         if($("#document-request-form").valid()){
-          table = "<table class='table'><tr><th>Document</th><th>Required</th></tr>";
+          table = "<table class='table'><tr><th>Document</th><th>Required/Optional</th></tr>";
           
            $("input[type=checkbox]:checked").each(function(i){
             val = $(this).val();
@@ -476,18 +522,20 @@ $(document).ready(function(){
                 date = requested_date.split("T");
                 time = date[1].split(".");
                 format = date[0].split("-");
-                date_format = format[2]+"-"+format[1]+"-"+format[0]+" "+time[0];
+                date_format = format[1]+"-"+format[2]+"-"+format[0]+" "+time[0];
               }
               
 
               $('td',row).eq(0).html('<a href="/documentlist/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
-              $('td',row).eq(1).html(date_format);
-              $('td', row).eq(2).html('<center><a class="dwldbtn" href="/downloadDocument?pk='+data.pk+'" title="Download" ><i class="fa fa-download iconFontSize-medium" ></i></a></center>');
-              $('td', row).eq(3).html('<center><a class="deletebtn" onclick="confirmDelete('+data.pk+')" title="delete" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+              $('td',row).eq(1).html(data.fields['subject']);
+              $('td',row).eq(2).html(date_format);
+              $('td', row).eq(3).html('<center><a class="dwldbtn" href="/downloadDocument?pk='+data.pk+'" title="Download" ><i class="fa fa-download iconFontSize-medium" ></i></a></center>');
+              $('td', row).eq(4).html('<center><a class="deletebtn" onclick="confirmDelete('+data.pk+')" title="delete" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
             },
 
           "columns": [
               { "data": "fields[email]" },
+              { "data": "fields[subject]" },              
               { "data": "fields[email]" },              
               { "data": "fields[email]" },              
               { "data": "fields[email]" },              
@@ -512,15 +560,17 @@ $(document).ready(function(){
             date = requested_date.split("T");
             time = date[1].split(".");
             format = date[0].split("-");
-            date_format = format[2]+"-"+format[1]+"-"+format[0]+" "+time[0];
+            date_format = format[1]+"-"+format[2]+"-"+format[0]+" "+time[0];
 
               $('td',row).eq(0).html('<a href="/documentlist/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
-              $('td',row).eq(1).html(date_format);
-              $('td', row).eq(2).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+              $('td',row).eq(1).html(data.fields['subject']);
+              $('td',row).eq(2).html(date_format);
+              $('td', row).eq(3).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
             },
 
           "columns": [
               { "data": "fields[email]" },
+              { "data": "fields[subject]" },
               { "data": "fields[email]" },
               { "data": "fields[email]" },
           ]
@@ -721,6 +771,24 @@ function nextTab(elem) {
 function prevTab(elem) {
     $(elem).prev().find('a[data-toggle="tab"]').click();
 }
+
+jQuery.validator.addMethod(
+    "multiemail",
+     function(value, element) {
+         if (this.optional(element)) // return true on optional element 
+             return true;
+         var emails = value.split(/[,]+/); // split element by , and ;
+         valid = true;
+         for (var i in emails) {
+             value = emails[i];
+             valid = valid &&
+                     jQuery.validator.methods.email.call(this, $.trim(value), element);
+         }
+         return valid;
+     },
+
+    jQuery.validator.messages.email
+);
 </script>
   
 

@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect
 from django.views.generic import View
 from django.shortcuts import HttpResponse
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.core import serializers
 from django.utils.crypto import get_random_string
 import json
@@ -20,8 +21,9 @@ from django.contrib.auth.forms import PasswordChangeForm
 from datetime import datetime
 
 from core.forms import DocumentForm
-from immigration.settings import BASE_URL, MEDIA_URL
+from immigration.settings import BASE_URL, MEDIA_URL, ADMIN_EMAIL
 from core.models import Employee, Document, EmployeeDocument
+from core.utils import SendMail
 
 
 class HomeClass(View):
@@ -95,6 +97,7 @@ class HomeClass(View):
             end = start + length
             obj = obj[start:end]
 
+        # import ipdb;ipdb.set_trace()
         serialized_obj = serializers.serialize('json', obj)
         serialized_obj = json.loads(serialized_obj)
         result = {
@@ -121,28 +124,54 @@ class HomeClass(View):
 
     def createDocumentRequest(self, request):
         email = request.POST.get('email', None)
+        name = request.POST.get('name', None)
+        cc_email = request.POST.get('cc_email', None)
+        cc_email_list = []
+        if cc_email:
+            cc_email_list = cc_email.split(",")
+        subject = request.POST.get('subject', None)
         documentslist = request.POST.getlist('document')
         if email:
-            is_exist = Employee.objects.filter(email__iexact=email).exists()
+            # import ipdb;ipdb.set_trace()
+            is_exist = Employee.objects.filter(email__iexact=email, completed=False).exists()
             result = {}
             if is_exist:
+                employeeobj = Employee.objects.get(email__iexact=email, completed=False)
+                employee_id = employeeobj.id
+                employeeobj.subject=subject
+                employeeobj.name=name
+                employeeobj.save()
+
+                docobj = EmployeeDocument.objects.filter(employee_id=employee_id)
+                alreadyadded = []
+                for documentpk in documentslist:
+                    documentpk not in docobj.values_list('document_id',flat=True)
+                    if int(documentpk) not in docobj.values_list('document_id',flat=True):
+                        required = True if request.POST.get('document_required_'+documentpk) == "on" else False
+                        d = EmployeeDocument.objects.create(employee_id=employee_id, document_id=documentpk, required=required)
+                    else:
+                        required = True if request.POST.get('document_required_'+documentpk) == "on" else False
+                        addedobj = EmployeeDocument.objects.get(employee_id=employee_id, document_id=int(documentpk))
+                        addedobj.required = required
+                        addedobj.save()
+                        alreadyadded.append(documentpk)
                 result = {
-                    'status': 'failure',
-                    'error': 'Email is already requested'
+                    'status': 'success',
+                    'data':'Document has been successfully updated',
+                    'warning': 'Already append documents {0}'.format(str(alreadyadded)) 
                 }
             else:
                 unique_id = get_random_string(length=32)
-                s = Employee(email=email, token=unique_id)
+                s = Employee(email=email, token=unique_id, subject=subject, name=name, email_copy=cc_email)
                 s.save()
                 for documentpk in documentslist:
                     required = True if request.POST.get('document_required_'+documentpk) == "on" else False
                     d = EmployeeDocument.objects.create(employee=s, document_id=documentpk, required=required)
                 try:
-                    # urllib.quote_plus(url)
-                    # subject, from_email, to = 'Marlabs Immigration Document Upload Form', 'noreply@marlabs.com', "sreerenj.s@marlabs.com"
-                    subject, from_email, to = 'Marlabs Immigration Document Upload Form', 'noreply@marlabs.com', "%s" %(email)
-                    print subject, from_email, to
-                    # email = urllib.quote(email, safe='')
+                    if(subject == '' or subject is None):
+                        subject = 'Marlabs Immigration Document Upload Form'
+                    from_email, to = 'noreply@marlabs.com', "%s" %(email)
+                    
                     url = "%sdoclogin/?pk=%s" % (BASE_URL, s.id)
                     text_content = 'This is an important message.'
 
@@ -152,7 +181,7 @@ class HomeClass(View):
                     d = Context({'url': url ,'token': unique_id})
                     text_content = plaintext.render(d)
                     html_content = htmly.render(d)
-                    msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+                    msg = EmailMultiAlternatives(subject, text_content, from_email, [to], cc=cc_email_list)
                     msg.attach_alternative(html_content, "text/html")
                     msg.send()
                     result = {'status': 'success', 'data': 'Mail has been sent successfully'}
@@ -175,7 +204,9 @@ class HomeClass(View):
     def deleteEmployee(self, request):
         pk = request.POST.get('pk', None)
         if pk:
-            # Employee.objects.filter(pk=pk).delete()
+            empDocs = EmployeeDocument.objects.filter(employee_id = pk)
+            for empDoc in empDocs:
+                empDoc.file.delete()
             empDel = Employee.objects.get(pk=pk)
             email = empDel.email
             completed = empDel.completed
@@ -193,9 +224,8 @@ class HomeClass(View):
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
             # empDel = Employee.objects.filter(pk=pk)
-            # empDocs = EmployeeDocument.objects.filter(employee_id = pk)
-            # for empDoc in empDocs:
-            #     empDoc.file.delete()
+            # import ipdb;ipdb.set_trace()
+
             result = {'status': 'success', 'data': 'Deleted successfully'}
         else:
             result = {'status': 'failure', 'error': 'Something went wrong..!'}
@@ -214,18 +244,6 @@ class HomeClass(View):
         last_name = request.POST.get('last_name', None)
         old_password = request.POST.get('old_password', None)
         password = request.POST.get('password', None)
-        # if old_password:
-
-        # user = User.objects.get(id=request.user.id)
-        # if email:
-        #     user.email=email
-        #     user.save()
-        # if first_name:
-        #     user.first_name=first_name
-        #     user.save()
-        # if last_name:
-        #     user.last_name=last_name
-        #     user.save()
 
 
 class Documentlogin(View):
@@ -260,8 +278,8 @@ class Documentlogin(View):
                 employee_email = Employee.objects.get(pk=pk).email
                 request_status = Employee.objects.get(pk=pk).status
                 return render(request, self.template_add, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated, 'request_status': request_status})
+
             else:
-                # <ul><li>Invalid token</li><li>YOur request has been canceled by marlabs admin</li></ul>
                 messages.error(request, 'Invalid token')
                 return render(request, self.template_name, {'pk': pk})
         
@@ -276,12 +294,37 @@ class ConfirmRequest(View):
             return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
         else:
             if Employee.objects.filter(pk=pk).exists():
-                obj = Employee.objects.get(pk=pk)
-                obj.completed = True
-                obj.save()
-                return render(request, self.thank_page)
+                try:
+                    obj = Employee.objects.get(pk=pk)
+                    obj.completed = True
+                    obj.save()
+                    
+                    subject = 'Marlabs Immigration Document Upload Completion'
+                    from_email, to = obj.email, "%s" %(ADMIN_EMAIL)
+                    
+                    text_content = 'This is an important message.'
+                    plain_template = 'core/upload-complete-email.txt'
+                    html_template = 'core/upload-complete-email.html'
+                    
+                    data = {'email':obj.email}
+                    
+                    result = SendMail(html_template, plain_template, data, subject, text_content, from_email, to)
+                    if result:
+                        return HttpResponseRedirect('/thankyou/')
+                    else:
+                        print result
+                        return render(request, self.error_page, {'error': 1, 'data': 'Something went wrong'})
+                except Exception as e:
+                    print e.message
+                    return render(request, self.error_page, {'error': 1, 'data': 'Something went wrong'})
             else:
                 return render(request, self.error_page, {'error': 1, 'data': 'Invalid user'})
+
+class Thankyou(View):
+    thank_page = 'document/thank_you.html'
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.thank_page)
 
 
 class DocumentList(View):
@@ -297,8 +340,8 @@ class DocumentList(View):
             authenticated = 1
             if is_exist:
                 documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
-                employee_email = Employee.objects.get(pk=pk).email
-                return render(request, self.template_name, { 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated})
+                employee = Employee.objects.get(pk=pk)
+                return render(request, self.template_name, { 'media_url': MEDIA_URL, 'documents': documents, 'employee': employee, 'authenticated': authenticated})
             else:
                 return render(request, self.error_page, {'error': 1, 'authenticated': authenticated})
         return render(request, self.error_page, {'form': form, 'data': data, 'authenticated': authenticated})
@@ -443,3 +486,24 @@ class Profile(View):
             user.save()
         messages.success(request, 'Your profile has been successfully updated')
         return render(request, 'core/profile.html', {'user': user})
+
+
+class MediaHandle(View):
+    def get(self, request, *args, **kwargs):
+        
+        import mimetypes
+        response={}
+        mimetypes.init()
+        try:
+            file_path = request.path
+            file_path = file_path[1:]
+            fsock = open(file_path,"rb")
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            mime_type_guess = mimetypes.guess_type(file_name)
+            if mime_type_guess is not None:
+                response = HttpResponse(fsock, content_type=mime_type_guess[0])
+            response['Content-Disposition'] = 'attachment; filename=' + file_name            
+        except IOError:
+            response = HttpResponseNotFound()
+        return response

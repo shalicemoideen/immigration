@@ -130,6 +130,8 @@ EMAIL_HOST_USER = 'helpdesk@marlabs.com'
 
 
 BASE_URL = 'http://192.168.65.156:8001/'
+# ADMIN_EMAIL = 'bimal@marlabs.com'
+ADMIN_EMAIL = 'shalice.moideen@marlabs.com'
 # BASE_URL = 'http://127.0.0.1:8000/'
 
 INTERNAL_IPS = '127.0.0.1'

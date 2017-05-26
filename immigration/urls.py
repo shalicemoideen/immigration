@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 
 
 from core.forms import LoginForm, EmailValidationOnForgotPassword
-from core.views import HomeClass, DocumentClass, ChangePassword, Profile, Documentlogin, ConfirmRequest, DocumentList
+from core.views import HomeClass, DocumentClass, ChangePassword, Profile, Documentlogin, ConfirmRequest, DocumentList, Thankyou, MediaHandle
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
@@ -19,12 +19,15 @@ urlpatterns = [
     url(r'^home',login_required(HomeClass.as_view()), name='home'),
     url(r'^document',DocumentClass.as_view(), name='document'),
     url(r'^doclogin',Documentlogin.as_view(), name='document-login'),    
+    url(r'^thankyou/',Thankyou.as_view(), name='thankyou'),    
     url(r'^confirmrequest',ConfirmRequest.as_view(), name='confirm-request'),
     url(r'^downloadDocument$', 'core.views.downloadDocument', name='download-document'),
     url(r'^password$', login_required(ChangePassword.as_view()), name='password'),
     url(r'^profile$', login_required(Profile.as_view()), name='profile'),
-    url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {
+    url(r'^media/(?P<path>.*)$', MediaHandle.as_view(), {
         'document_root': settings.MEDIA_ROOT}),
+    # url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {
+    #     'document_root': settings.MEDIA_ROOT}),
 ]
 
 urlpatterns =urlpatterns+patterns('django.contrib.auth.views',

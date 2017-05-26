@@ -4,7 +4,10 @@ from django.utils.translation import ugettext_lazy as _
 # Create your models here.
 
 class Employee(models.Model):
-	email = models.EmailField(max_length=100,unique=True)
+	name = models.CharField(max_length=100, null=True, blank=True)
+	email = models.EmailField(max_length=100)
+	email_copy = models.CharField(max_length=200, null=True, blank=True)
+	subject = models.CharField(max_length=100, null=True, blank=True)
 	requested_date = models.DateTimeField(auto_now_add=True)
 	reported_date  = models.DateTimeField(blank=True, null=True)
 	token = models.CharField(max_length=200)
