@@ -1,7 +1,17 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Create your models here.
+
+class Division(models.Model):
+	name = models.CharField(max_length=200, null=True, blank=True)
+	email = models.EmailField(max_length=100)
+
+	class Meta:
+		verbose_name = _("Division")
+		verbose_name_plural = _("Division")
+
+	def __str__(self):
+		return "{0}".format(self.name)
 
 class Employee(models.Model):
 	name = models.CharField(max_length=100, null=True, blank=True)
@@ -10,6 +20,8 @@ class Employee(models.Model):
 	subject = models.CharField(max_length=100, null=True, blank=True)
 	requested_date = models.DateTimeField(auto_now_add=True)
 	reported_date  = models.DateTimeField(blank=True, null=True)
+	description = models.TextField(max_length=4000, null=True, blank=True)
+	division = models.ForeignKey(Division)
 	token = models.CharField(max_length=200)
 	status = models.BooleanField(default=False)
 	completed = models.BooleanField(default=False)
@@ -53,6 +65,8 @@ class EmployeeDocument(models.Model):
 
 	def __str__(self):
         	return "{0} - {1}".format(self.employee.email, self.document.name)
+
+
 
 
 		

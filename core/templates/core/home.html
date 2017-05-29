@@ -268,6 +268,21 @@
                               <input type="text" id="email_copy" name="cc_email" class="form-control" placeholder="Email cc (comma seperate)"/>
                             </div>
                           </div>
+                          <div class="col-sm-6">
+                            <div class="form-group">
+                              <select class="form-control" id="division" name="division">
+                                <option value="">Select Division</option>
+                                {% for division in divisions %}
+                                <option value="{{ division.pk }}">{{ division.name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                          </div>
+                          <div class="col-sm-6">
+                            <div class="form-group">
+                              <textarea name="description" id="description" class="form-control" placeholder="Description"></textarea>
+                            </div>
+                          </div>
                           </div>
                             <!-- <div class="error redtext" id="mail_error"></div> -->
                             <div class="row">
@@ -405,6 +420,9 @@ $(document).ready(function(){
             cc_email:{
               required: false,
               multiemail:true
+            },
+            division:{
+              required:true
             }
         },
         messages:{

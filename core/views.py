@@ -22,7 +22,7 @@ from datetime import datetime
 
 from core.forms import DocumentForm
 from immigration.settings import BASE_URL, MEDIA_URL, ADMIN_EMAIL
-from core.models import Employee, Document, EmployeeDocument
+from core.models import Employee, Document, EmployeeDocument, Division
 from core.utils import SendMail
 
 
@@ -32,8 +32,8 @@ class HomeClass(View):
     def get(self, request, *args, **kwargs):
         documents = Document.getAllDocuments()
         user = request.user
-        # print user.__dict__.get('_wrapped').__dict__
-        return render(request, self.template_name, {'documents': documents , 'user': user})
+        divisions = Division.objects.all()
+        return render(request, self.template_name, {'documents': documents , 'user': user, 'divisions': divisions})
 
     def post(self, request, *args, **kwargs):
         tag = request.POST.get('tag') or 'getDocumentList'
@@ -126,6 +126,8 @@ class HomeClass(View):
         email = request.POST.get('email', None)
         name = request.POST.get('name', None)
         cc_email = request.POST.get('cc_email', None)
+        description = request.POST.get('description', None)
+        division = request.POST.get('division', None)
         cc_email_list = []
         if cc_email:
             cc_email_list = cc_email.split(",")
@@ -162,7 +164,7 @@ class HomeClass(View):
                 }
             else:
                 unique_id = get_random_string(length=32)
-                s = Employee(email=email, token=unique_id, subject=subject, name=name, email_copy=cc_email)
+                s = Employee(email=email, token=unique_id, subject=subject, name=name, email_copy=cc_email, description=description, division_id=division)
                 s.save()
                 for documentpk in documentslist:
                     required = True if request.POST.get('document_required_'+documentpk) == "on" else False
@@ -178,7 +180,7 @@ class HomeClass(View):
                     plaintext = get_template('core/email.txt')
                     htmly = get_template('core/email.html')
 
-                    d = Context({'url': url ,'token': unique_id})
+                    d = Context({'url': url ,'token': unique_id, 'name':name})
                     text_content = plaintext.render(d)
                     html_content = htmly.render(d)
                     msg = EmailMultiAlternatives(subject, text_content, from_email, [to], cc=cc_email_list)
@@ -275,9 +277,8 @@ class Documentlogin(View):
             authenticated = 0
             if is_exist:
                 documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
-                employee_email = Employee.objects.get(pk=pk).email
-                request_status = Employee.objects.get(pk=pk).status
-                return render(request, self.template_add, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated, 'request_status': request_status})
+                employee = Employee.objects.get(pk=pk)
+                return render(request, self.template_add, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee': employee, 'authenticated': authenticated})
 
             else:
                 messages.error(request, 'Invalid token')
@@ -296,11 +297,12 @@ class ConfirmRequest(View):
             if Employee.objects.filter(pk=pk).exists():
                 try:
                     obj = Employee.objects.get(pk=pk)
+                    division = Division.objects.get(pk=obj.division_id)
                     obj.completed = True
                     obj.save()
                     
                     subject = 'Marlabs Immigration Document Upload Completion'
-                    from_email, to = obj.email, "%s" %(ADMIN_EMAIL)
+                    from_email, to = obj.email, "%s" %(division.email)
                     
                     text_content = 'This is an important message.'
                     plain_template = 'core/upload-complete-email.txt'
@@ -369,8 +371,8 @@ class DocumentClass(View):
 
             if is_exist:
                 documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
-                employee_email = Employee.objects.get(pk=pk).email
-                return render(request, self.template_name, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee_email': employee_email, 'authenticated': authenticated})
+                employee = Employee.objects.get(pk=pk)
+                return render(request, self.template_name, {'form': form, 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'employee': employee, 'authenticated': authenticated})
             else:
                 return render(request, self.template_name, {'error': 1, 'authenticated': authenticated})
         return render(request, self.template_name, {'form': form, 'data': data, 'authenticated': authenticated})
@@ -378,7 +380,8 @@ class DocumentClass(View):
     def post(self, request, *args, **kwargs):
         form = DocumentForm(request.POST, request.FILES)
         pk = request.POST.get('pk')
-        data = {'pk': pk}
+        token = request.POST.get('token', None)
+        data = {'pk': pk, 'token': token}
         employee_id = request.POST.get('employee_id') or None
         documentslist = request.POST.getlist('document')
 
@@ -398,7 +401,7 @@ class DocumentClass(View):
         em.reported_date = datetime.now()
         em.save()
         # messages.success(request, 'Your documents uploaded successfully')
-        return render(request, 'document/verify.html', {'form': form, 'status': "success", 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'authenticated': 0})
+        return render(request, 'document/verify.html', {'form': form, 'status': "success", 'data': data, 'media_url': MEDIA_URL, 'documents': documents, 'authenticated': 0, 'employee': em})
 
 
 def downloadDocument(request):
@@ -490,20 +493,30 @@ class Profile(View):
 
 class MediaHandle(View):
     def get(self, request, *args, **kwargs):
-        
         import mimetypes
-        response={}
         mimetypes.init()
+        pk = request.GET.get('pk', None)
+        token = request.GET.get('token', None)
+        valid = False
         try:
-            file_path = request.path
-            file_path = file_path[1:]
-            fsock = open(file_path,"rb")
-            file_name = os.path.basename(file_path)
-            file_size = os.path.getsize(file_path)
-            mime_type_guess = mimetypes.guess_type(file_name)
-            if mime_type_guess is not None:
-                response = HttpResponse(fsock, content_type=mime_type_guess[0])
-            response['Content-Disposition'] = 'attachment; filename=' + file_name            
+            if request.user.is_authenticated():
+                valid = True
+            elif pk is not None and token is not None:
+                if Employee.objects.filter(pk=pk, token=token).exists():
+                    valid = True
+
+            if valid:
+                file_path = request.path
+                file_path = file_path[1:]
+                fsock = open(file_path,"rb")
+                file_name = os.path.basename(file_path)
+                file_size = os.path.getsize(file_path)
+                mime_type_guess = mimetypes.guess_type(file_name)
+                if mime_type_guess is not None:
+                    response = HttpResponse(fsock, content_type=mime_type_guess[0])
+                response['Content-Disposition'] = 'attachment; filename=' + file_name
+            else:
+                response = HttpResponse("You are not allowed to download this document")
         except IOError:
             response = HttpResponseNotFound()
         return response
