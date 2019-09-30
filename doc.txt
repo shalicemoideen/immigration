@@ -1,0 +1,2 @@
+Need to give a description box for each document request
+Type - dropdown ('Visa','Contract','NSI')

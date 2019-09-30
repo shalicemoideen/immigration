@@ -33,9 +33,10 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'debug_toolbar',
+    # 'debug_toolbar',
 
     'core',
+    # 'ckeditor'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -47,7 +48,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
 ROOT_URLCONF = 'immigration.urls'
@@ -122,16 +123,16 @@ MEDIA_URL = '/media/'
 # EMAIL_USE_TLS = True
 
 # email settings
-EMAIL_USE_TLS = True
+# EMAIL_USE_TLS = True
 EMAIL_HOST = '192.168.31.35'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = 'helpdesk@marlabs.com'
 # email settings
 
 
-BASE_URL = 'http://192.168.65.156:8001/'
-ADMIN_EMAIL = 'bimal@marlabs.com'
-# ADMIN_EMAIL = 'shalice.moideen@marlabs.com'
+BASE_URL = 'http://192.168.65.56:8001/'
+# ADMIN_EMAIL = 'bimal@marlabs.com'
+ADMIN_EMAIL = 'shalice.moideen@marlabs.com'
 # BASE_URL = 'http://127.0.0.1:8000/'
 
 INTERNAL_IPS = '127.0.0.1'

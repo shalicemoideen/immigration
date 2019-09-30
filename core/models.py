@@ -58,6 +58,7 @@ class EmployeeDocument(models.Model):
 	required = models.BooleanField(default=False)
 	file     = models.FileField(upload_to='documents/',blank=True,null=True)
 	status   = models.BooleanField(default=False)
+	received_date  = models.DateTimeField(blank=True, null=True)
 
 	class Meta:
 		verbose_name = _("Employee-document")

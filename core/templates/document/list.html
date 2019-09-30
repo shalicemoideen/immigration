@@ -67,7 +67,7 @@
           <th>Division</th>
         </tr>
         <tr>
-          <td colspan="3">{{ employee.description }}</td>
+          <td colspan="3">{{ employee.description|safe }}</td>
           <td>{{ employee.division }}</td>
         </tr>
       </table>
@@ -81,6 +81,7 @@
                 <th>Document</th>
                 <th>Required/Optional</th>
                 <th>Submitted/Not submitted</th>
+                <th>Submitted date</th>
               </tr>
             
             </thead>
@@ -116,6 +117,9 @@
                 {% else %}
                     <td><span class="label label-warning">Not submitted</span></td>
                 {% endif %}
+                <td>
+                    <span > {{ document.received_date|date:"m-d-Y H:i:s"}} </span>
+                </td>
                 
               </tr>
 

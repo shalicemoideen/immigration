@@ -4,7 +4,11 @@
   {% block head %}
 	<link href="{% static "css/jquery.dataTables.min.css" %}" rel="stylesheet">
   <link href="{% static "css/wizard.css" %}" rel="stylesheet">
- 
+  <style>
+    /*.cke_skin_kama .cke_dialog_body { z-index: inherit; }*/
+    .cke_skin_kama .cke_dialog_body { z-index: 10200 !important; }
+  </style>
+   
   {% endblock %}
 
 {% block main %}
@@ -52,6 +56,7 @@
                     <th>Email</th>
                     <th>Subject</th>
                     <th>Requested Date</th>
+                    <th align="center" style="text-align:center"> Additional Request </th>
                     <th align="center" style="text-align:center"> Delete </th>
                     
                     
@@ -189,7 +194,8 @@
 
   
 </div>
- </div>
+
+</div>
  
 
 
@@ -278,9 +284,9 @@
                               </select>
                             </div>
                           </div>
-                          <div class="col-sm-6">
+                          <div class="col-sm-12">
                             <div class="form-group">
-                              <textarea name="description" id="description" class="form-control" placeholder="Description"></textarea>
+                              <textarea name="description" id="description" class="form-control richtexteditor" placeholder="Description" ></textarea>
                             </div>
                           </div>
                           </div>
@@ -337,6 +343,43 @@
 
 
 
+<div id="appenddocument" class="modal fade" role="dialog">
+  <div class="modal-dialog modal-lg">
+  <form name="appendform" id="appendform" method="post">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        
+      </div>
+      <div class="modal-body">
+        {% csrf_token %}
+        <input type="hidden" name="employeeid"  id="employeeid">
+        <div class="row">
+          <div class="col-md-12">
+              <div class="control-group">
+                    <h4>Select cases</h4><br/>
+                      <label id="document-error" class="error-class" for="document" style="display: none;"></label>
+                      <div class="doc-area1" id="doc-area1">
+
+                      </div>
+              </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="error redtext" id="append_error"></div>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-default"  id="append_document">Save</button>
+        
+      </div>
+    </div>
+    </form>
+
+  </div>
+</div>
+
+
+
 
 <div id="adddocumentid" class="modal fade" role="dialog">
   <div class="modal-dialog modal-lg">
@@ -379,9 +422,28 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js" data-turbolinks-track="true"></script>
   <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
   <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/additional-methods.min.js"></script>
+  <script src="{% static "ckeditor/ckeditor.js" %}"></script>
+
+  <script>
+    $.fn.modal.Constructor.prototype.enforceFocus = function() {
+      modal_this = this
+      $(document).on('focusin.modal', function (e) {
+        if (modal_this.$element[0] !== e.target && !modal_this.$element.has(e.target).length 
+        && !$(e.target.parentNode).hasClass('cke_dialog_ui_input_select') 
+        && !$(e.target.parentNode).hasClass('cke_dialog_ui_input_text')) {
+          modal_this.$element.focus()
+        }
+      })
+    };
+  </script>
 	
 <script>
 $(document).ready(function(){
+
+    CKEDITOR.replace( 'description', {
+      height: 250
+    } );
+  
 
     $(".modalnull").on("hidden.bs.modal", function(){
         // $(".modal-body").html("");
@@ -389,6 +451,14 @@ $(document).ready(function(){
         $("#employee_name").val('');
         $("#email_copy").val('');
         $("#email_subject").val('');
+
+        $("#division").val('');
+        $("#division").removeClass("error-class");
+        $("#division-error").html('');
+
+        $("#description").html('');
+        CKEDITOR.instances.description.setData('');
+
         $("#request_email-error").html('');
         $("#document-error").html('');
         $("#verify_email").html('');
@@ -424,6 +494,21 @@ $(document).ready(function(){
             division:{
               required:true
             }
+        },
+        messages:{
+          "document":"Please select atleast one document..!"
+        }
+    });
+
+
+    var appendValidator = $("#appendform").validate({
+        errorClass: "error-class",
+        submitHandler : postFormAppend,
+        rules: {
+            "document": { 
+                    required: true, 
+                    minlength: 1 
+            }            
         },
         messages:{
           "document":"Please select atleast one document..!"
@@ -468,9 +553,11 @@ $(document).ready(function(){
           
            $("input[type=checkbox]:checked").each(function(i){
             val = $(this).val();
+            console.log('val',val);
             
             if(val != "on"){
-                var required_val = $('input[type=checkbox][name=document_required_'+val+']').is(":checked");
+                // var required_val = $('input[type=checkbox][name=document_required_'+val+']').is(":checked");
+                var required_val = $('input[type=checkbox][name=document_required_'+val+']').prop('checked');
                 console.log(required_val,"required_val");
                 
                 if(required_val == true){
@@ -583,12 +670,14 @@ $(document).ready(function(){
               $('td',row).eq(0).html('<a href="/documentlist/?pk='+data.pk+'" >'+data.fields['email']+'</a>');
               $('td',row).eq(1).html(data.fields['subject']);
               $('td',row).eq(2).html(date_format);
-              $('td', row).eq(3).html('<center><a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
+              $('td',row).eq(3).html('<center> <a data-toggle="modal" id="'+data.pk+'" data-target="#appenddocument" class="appendbtn" title="Additional request" ><i class="fa fa-upload" aria-hidden="true"></i></a></center>');
+              $('td', row).eq(4).html('<center> <a class="deletebtn" title="delete" onclick="confirmDelete('+data.pk+')" ><i class="fa fa-trash-o iconFontSize-medium" ></i></a></center>');
             },
 
           "columns": [
               { "data": "fields[email]" },
               { "data": "fields[subject]" },
+              { "data": "fields[email]" },
               { "data": "fields[email]" },
               { "data": "fields[email]" },
           ]
@@ -664,7 +753,38 @@ $(document).ready(function(){
           $(this).next().next(".check-required-document").css('display','none');
         }
         
-      })
+      });
+
+      $(document).on('click','.appendbtn',function(){
+        
+        var employeeid = $(this).attr("id");
+        $("#employeeid").val(employeeid);
+
+        var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+        $.ajax({
+          url:"/home",
+          data:{employeeid:employeeid,csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'getEmployeeDocuments'},
+          type:"POST",
+          dataType:"JSON",
+          success:function(data){
+            if(data['status'] === 'success'){
+              var objdoc =[];
+              var objreq ={};
+              for(var i in data['documents']){
+                objdoc[i] = data['documents'][i]['fields']['document'];
+                objreq[data['documents'][i]['fields']['document']] = data['documents'][i]['fields']['required'];
+              }
+              console.log(objreq);
+              getAllDocumentsAppend(objdoc,objreq);
+            }
+          }
+        });
+
+        // $("input:checkbox").prop('checked', true);  
+
+      });
+
+      
       getAllDocuments();
     $('[data-toggle="tooltip"]').tooltip(); 
     
@@ -673,8 +793,9 @@ $(document).ready(function(){
 function postFormRequest(form) {
   $("#wait").css("display", "block");
   $("#mail_error").html('');
+  var data = CKEDITOR.instances.description.getData();
   $.post('/home',
-      $(form).serialize()+"&tag=createDocumentRequest",
+      $(form).serialize()+"&tag=createDocumentRequest&description="+encodeURIComponent(data),
       function (response) { 
         
           $("#wait").css("display", "none");
@@ -685,6 +806,31 @@ function postFormRequest(form) {
             $("#mail_error").html('');
             $("#email").val('');
             $('#addemailid').modal('toggle');
+            $table1.ajax.reload();
+            $.notify(response['data'],{
+              style: 'bootstrap',
+              className: 'success',
+            });
+          }
+      }, 
+      'json');
+}
+
+
+function postFormAppend(form) {
+  $("#wait").css("display", "block");
+  $("#append_error").html('');
+  $.post('/home',
+      $(form).serialize()+"&tag=createDocumentAppend",
+      function (response) { 
+        
+          $("#wait").css("display", "none");
+          if(response['status'] === 'failure'){
+            $("#append_error").html(response['error']);
+          }
+          else{
+            $("#append_error").html('');
+            $('#appenddocument').modal('toggle');
             $table1.ajax.reload();
             $.notify(response['data'],{
               style: 'bootstrap',
@@ -748,6 +894,7 @@ function getAllDocuments(){
         }
 
         $("#doc-area").html(html_data);
+        $("#doc-area1").html(html_data);
         $('.bootstrap_checkbox').bootstrapToggle(); 
         
       }
@@ -755,6 +902,45 @@ function getAllDocuments(){
   });
 }
 
+function getAllDocumentsAppend(objdoc,objreq){
+  
+  var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val();
+  $.ajax({
+    url:"/home",
+    data:{csrfmiddlewaretoken:csrfmiddlewaretoken,tag:'getAllDocuments'},
+    type:"POST",
+    dataType:"JSON",
+    success:function(data){
+      if(data['status'] === 'success'){
+        
+        var html_data="";
+        for(i in data['data']){
+          checked = "";
+          requiredchecked = "";
+          checkdisplay = 'style="display:none;"';
+          if(jQuery.inArray(data['data'][i]['pk'], objdoc) !== -1){
+            checked = "checked";
+            checkdisplay = 'style="display:block;"';
+
+            if(objreq[data['data'][i]['pk']] ==  true){
+              requiredchecked ="checked"
+            }
+          }
+          html_data+='<label class="control control-checkbox"><span class="check-label">'+data['data'][i]['fields']['name']+'</span>';
+          html_data+='<input type="checkbox" '+checked+' name="document" class="check-documents" value="'+data['data'][i]['pk']+'"/>';
+          html_data+='<div class="control_indicator"></div>';
+          html_data+='<div class="check-required-document" '+checkdisplay+' >';
+          html_data+='<input type="checkbox" name="document_required_'+data['data'][i]['pk']+'" '+requiredchecked+' data-toggle="toggle" data-on="Required" data-off="Optional" data-onstyle="danger" data-offstyle="success" class="bootstrap_checkbox"></div>';
+          html_data+='</label>';          
+        }
+
+        $("#doc-area1").html(html_data);
+        $('.bootstrap_checkbox').bootstrapToggle(); 
+        
+      }
+    }
+  });
+}
 
 
 function confirmDocDelete(pk){
@@ -808,7 +994,8 @@ jQuery.validator.addMethod(
     jQuery.validator.messages.email
 );
 </script>
-  
+
+
 
 {% endblock footer %}
 

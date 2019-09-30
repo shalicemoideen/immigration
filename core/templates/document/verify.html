@@ -97,7 +97,7 @@
                             <label>Description</label>
                           </div>
                           <div class="col-md-10">
-                            {{ employee.description }}
+                            {{ employee.description|safe }}
                           </div>                              
                         </div>
                         <form id="documentform" enctype="multipart/form-data" action="/document" method="post" class="form-horizontal">

@@ -39,9 +39,11 @@ class HomeClass(View):
         tag = request.POST.get('tag') or 'getDocumentList'
         options = {
             'getDocumentList': self.getDocumentList,
+            'getEmployeeDocuments': self.getEmployeeDocuments,
             'listDocument': self.listDocument,
             'createDocument': self.createDocument,
             'createDocumentRequest': self.createDocumentRequest,
+            'createDocumentAppend': self.createDocumentAppend,
             'deleteDocument': self.deleteDocument,
             'deleteEmployee': self.deleteEmployee,
             'getAllDocuments': self.getAllDocuments,
@@ -80,6 +82,21 @@ class HomeClass(View):
         else:
             data = {'data': [], 'recordsTotal': 0, 'recordsFiltered': 0}
         return data
+    def getEmployeeDocuments(self, request):
+        employeeid = request.POST.get('employeeid', None)
+        if employeeid:
+            docobj = EmployeeDocument.objects.filter(employee_id=employeeid)
+            serialized_obj = serializers.serialize('json', docobj)
+            serialized_obj = json.loads(serialized_obj)
+            result = {'status': 'success', 'documents': serialized_obj}
+
+        else:
+            result = {
+                'status': 'failure',
+                'error': "Please enter the document name"
+            }
+        return result
+
 
     def listDocument(self, request):
         name = request.POST.get('search[value]', None)
@@ -180,7 +197,7 @@ class HomeClass(View):
                     plaintext = get_template('core/email.txt')
                     htmly = get_template('core/email.html')
 
-                    d = Context({'url': url ,'token': unique_id, 'name':name})
+                    d = Context({'url': url ,'token': unique_id, 'name':name, 'description': description})
                     text_content = plaintext.render(d)
                     html_content = htmly.render(d)
                     msg = EmailMultiAlternatives(subject, text_content, from_email, [to], cc=cc_email_list)
@@ -194,9 +211,29 @@ class HomeClass(View):
             result = {'status': 'failure', 'error': "Please enter a valid email id"}
         return result
 
+    def createDocumentAppend(self, request):
+        employeeid = request.POST.get('employeeid', None)
+        documentslist = request.POST.getlist('document')
+        if employeeid:
+            docobj = EmployeeDocument.objects.filter(employee_id=employeeid).delete()
+            alreadyadded = []
+            for documentpk in documentslist:
+                required = True if request.POST.get('document_required_'+documentpk) == "on" else False
+                d = EmployeeDocument.objects.create(employee_id=employeeid, document_id=documentpk, required=required)
+                result = {
+                    'status': 'success',
+                    'data':'Document has been successfully updated',
+                    'warning': 'Already append documents {0}'.format(str(alreadyadded)) 
+                }
+        else:
+            result = {'status': 'failure', 'error': 'Something went wrong..!'}
+        return result
+
     def deleteDocument(self, request):
         pk = request.POST.get('pk', None)
         if pk:
+            # import ipdb;ipdb.set_trace()
+            # Employee.objects.filter(employeedocument__document_id =10,completed=False)
             Document.objects.filter(pk=pk).delete()
             result = {'status': 'success', 'data': 'Deleted successfully'}
         else:
@@ -388,11 +425,11 @@ class DocumentClass(View):
         documents = EmployeeDocument.objects.select_related().filter(employee_id=pk)
         for documentlist in documentslist:
             uploadfile = request.FILES.get('upload_document_'+documentlist, '')
-            print uploadfile
             if uploadfile != '':
                 ed = EmployeeDocument.objects.get(id=documentlist)
                 ed.status = 1
                 ed.file = uploadfile
+                ed.received_date = datetime.now()
                 ed.save()
                 e = Employee.objects.get(pk=pk)
                 e.status = 1
